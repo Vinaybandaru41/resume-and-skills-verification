@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Decentralized Resume Verification</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h2>Decentralized Resume & Skill Verification</h2>
+  
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="walletAddress"></p>
+
+  <h3>Submit Resume</h3>
+  <input id="name" placeholder="Name"><br>
+  <input id="email" placeholder="Email"><br>
+  <input id="qualification" placeholder="Qualification"><br>
+  <input id="skills" placeholder="Skills (comma separated)"><br>
+  <input id="experience" placeholder="Experience"><br>
+  <button onclick="submitResume()">Submit Resume</button>
+
+  <h3>My Resumes</h3>
+  <button onclick="fetchMyResumes()">Load Resumes</button>
+  <div id="resumeList"></div>
+
+  <script>
+    const contractAddress = 'YOUR_CONTRACT_ADDRESS_HERE'; // Replace with actual deployed address
+    const contractABI = [/* Paste ABI here */];
+
+    let contract;
+    let signer;
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+        document.getElementById("walletAddress").innerText = "Connected: " + address;
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+      } else {
+        alert("MetaMask not found. Please install it.");
+      }
+    }
+
+    async function submitResume() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const qualification = document.getElementById("qualification").value;
+      const skillsInput = document.getElementById("skills").value;
+      const experience = document.getElementById("experience").value;
+
+      const skills = skillsInput.split(',').map(skill => skill.trim());
+
+      const tx = await contract.submitResume(name, email, qualification, skills, experience);
+      await tx.wait();
+      alert("Resume submitted!");
+    }
+
+    async function fetchMyResumes() {
+      const ids = await contract.getMyResumeIds();
+      const resumeList = document.getElementById("resumeList");
+      resumeList.innerHTML = "";
+
+      for (let i = 0; i < ids.length; i++) {
+        const resume = await contract.getResume(ids[i]);
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <hr>
+          <p><strong>ID:</strong> ${ids[i]}</p>
+          <p><strong>Name:</strong> ${resume[0]}</p>
+          <p><strong>Email:</strong
